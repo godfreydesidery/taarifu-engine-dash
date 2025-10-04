@@ -38,7 +38,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
       </div>
       
       <div class="row g-4 mb-4">
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -58,7 +58,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -78,7 +78,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -98,7 +98,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -118,7 +118,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -138,7 +138,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -158,7 +158,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -178,7 +178,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -198,7 +198,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -218,7 +218,7 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
@@ -304,6 +304,41 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
       align-items: center;
       justify-content: center;
       gap: 8px;
+    }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 576px) {
+      .dashboard-container {
+        padding: 0 0.5rem;
+      }
+
+      .card-body {
+        padding: 1rem;
+      }
+
+      .stat-value .display-4 {
+        font-size: 1.5rem;
+      }
+
+      .card-title {
+        font-size: 1rem;
+      }
+
+      .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+      }
+
+      .d-grid .btn {
+        margin-bottom: 0.25rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .row.g-4 {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+      }
     }
   `]
 })

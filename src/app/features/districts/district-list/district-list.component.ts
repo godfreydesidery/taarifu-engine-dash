@@ -84,7 +84,7 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
 
           <div *ngIf="!isLoading && districts.length > 0" class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover table-striped">
               <thead class="table-light">
                 <tr>
                   <th (click)="onSort('code', $event)" class="sortable">
@@ -190,6 +190,63 @@ import { ToastService } from '../../../core/services/toast.service';
     .sortable i {
       margin-left: 5px;
       font-size: 0.7em;
+    }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+      .container-fluid {
+        padding: 0 0.5rem;
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+      }
+
+      .card-header h5 {
+        margin-bottom: 0;
+      }
+
+      .table-responsive {
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+      }
+
+      .table th,
+      .table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+      }
+
+      .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .badge {
+        font-size: 0.65em;
+        padding: 0.25em 0.4em;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .table th,
+      .table td {
+        padding: 0.375rem 0.125rem;
+        font-size: 0.8rem;
+      }
+
+      .btn-group {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .btn-group .btn {
+        width: 100%;
+        margin-right: 0 !important;
+      }
     }
   `]
 })

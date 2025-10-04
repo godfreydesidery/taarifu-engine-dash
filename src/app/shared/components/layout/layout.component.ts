@@ -40,7 +40,7 @@ import { ToastComponent } from '../toast/toast.component';
       
       <!-- Mobile Overlay -->
       <div class="mobile-overlay" 
-           [class.show]="sidebarCollapsed && isMobile" 
+           [class.show]="!sidebarCollapsed && isMobile" 
            (click)="closeSidebar()"></div>
       
       <!-- Toast Notifications -->
@@ -91,15 +91,23 @@ import { ToastComponent } from '../toast/toast.component';
       right: 0;
       bottom: 0;
       background-color: rgba(0, 0, 0, 0.5);
-      z-index: 99;
+      z-index: 999;
       opacity: 0;
       visibility: hidden;
       transition: all 0.3s ease;
+      display: none;
     }
 
     .mobile-overlay.show {
       opacity: 1;
       visibility: visible;
+      display: block;
+    }
+
+    @media (min-width: 769px) {
+      .mobile-overlay {
+        display: none !important;
+      }
     }
 
     /* Mobile Responsive */

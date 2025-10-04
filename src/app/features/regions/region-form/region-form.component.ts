@@ -248,6 +248,58 @@ import { Region, CreateRegionRequest, UpdateRegionRequest } from '../../../core/
     .text-danger {
       color: #dc3545 !important;
     }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+      .container-fluid {
+        padding: 0 0.5rem;
+      }
+
+      .row {
+        margin: 0;
+      }
+
+      .col-md-6 {
+        padding: 0 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .card-body {
+        padding: 1rem;
+      }
+
+      .form-control {
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+
+      .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+
+      .btn:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .col-md-6 {
+        padding: 0 0.25rem;
+      }
+
+      .card-body {
+        padding: 0.75rem;
+      }
+
+      .form-label {
+        font-size: 0.9rem;
+      }
+
+      .form-control {
+        font-size: 16px;
+        padding: 0.5rem 0.75rem;
+      }
+    }
   `]
 })
 export class RegionFormComponent implements OnInit {

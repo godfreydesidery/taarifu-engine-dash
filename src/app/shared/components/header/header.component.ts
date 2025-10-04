@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -13,32 +13,39 @@ import { AuthService } from '../../../core/services/auth.service';
   template: `
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: #1a1a2e;">
       <div class="container-fluid">
-        <button class="btn btn-outline-light me-2" type="button" (click)="toggleSidebar()">
+        <button class="btn btn-outline-light me-2" type="button" (click)="onToggleSidebar()">
           <i class="bi bi-list"></i>
         </button>
         <a class="navbar-brand fw-bold" routerLink="/dashboard">
           <i class="bi bi-geo-alt-fill me-2"></i>
-          Taarifu Engine Dashboard
+          <span class="d-none d-sm-inline">Taarifu Engine Dashboard</span>
+          <span class="d-sm-none">Taarifu</span>
         </a>
         
-        <div class="navbar-nav ms-auto">
-          <div class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-person-circle me-2"></i>
-              <span class="d-none d-md-inline">{{ currentUser?.username || 'Admin User' }}</span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="#" (click)="viewProfile()">
-                <i class="bi bi-person me-2"></i>Profile
-              </a></li>
-              <li><a class="dropdown-item" href="#" (click)="viewSettings()">
-                <i class="bi bi-gear me-2"></i>Settings
-              </a></li>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item text-danger" href="#" (click)="logout()">
-                <i class="bi bi-box-arrow-right me-2"></i>Logout
-              </a></li>
-            </ul>
+        <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <div class="navbar-nav ms-auto">
+            <div class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle me-2"></i>
+                <span class="d-none d-md-inline">{{ currentUser?.username || 'Admin User' }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" (click)="viewProfile()">
+                  <i class="bi bi-person me-2"></i>Profile
+                </a></li>
+                <li><a class="dropdown-item" href="#" (click)="viewSettings()">
+                  <i class="bi bi-gear me-2"></i>Settings
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="#" (click)="logout()">
+                  <i class="bi bi-box-arrow-right me-2"></i>Logout
+                </a></li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -105,6 +112,7 @@ import { AuthService } from '../../../core/services/auth.service';
   `]
 })
 export class HeaderComponent {
+  @Output() toggleSidebar = new EventEmitter<void>();
   currentUser = this.authService.getCurrentUser();
 
   constructor(
@@ -112,9 +120,8 @@ export class HeaderComponent {
     private router: Router
   ) {}
 
-  toggleSidebar() {
-    // Emit event or use service to toggle sidebar
-    console.log('Toggle sidebar');
+  onToggleSidebar() {
+    this.toggleSidebar.emit();
   }
 
   viewProfile() {
