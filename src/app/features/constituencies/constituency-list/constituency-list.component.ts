@@ -25,7 +25,7 @@ import { Constituency } from '../../../core/models/constituency.model';
                   class="form-control" 
                   placeholder="Search constituencies..." 
                   [(ngModel)]="searchTerm" 
-                  (input)="onSearch()">
+                  (keyup.enter)="onSearch()">
               </div>
             </div>
           </div>

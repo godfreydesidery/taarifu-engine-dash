@@ -40,7 +40,7 @@ import { Hamlet } from '../../../core/models/hamlet.model';
                   class="form-control" 
                   placeholder="Search hamlets..." 
                   [(ngModel)]="searchTerm" 
-                  (input)="onSearch()">
+                  (keyup.enter)="onSearch()">
               </div>
             </div>
           </div>

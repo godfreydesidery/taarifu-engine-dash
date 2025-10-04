@@ -40,7 +40,7 @@ import { Ward } from '../../../core/models/ward.model';
                   class="form-control" 
                   placeholder="Search wards..." 
                   [(ngModel)]="searchTerm" 
-                  (input)="onSearch()">
+                  (keyup.enter)="onSearch()">
               </div>
             </div>
           </div>

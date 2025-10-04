@@ -40,7 +40,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   class="form-control" 
                   placeholder="Search regions..." 
                   [(ngModel)]="searchTerm" 
-                  (input)="onSearch()">
+                  (keyup.enter)="onSearch()">
               </div>
             </div>
           </div>

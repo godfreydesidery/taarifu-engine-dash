@@ -40,7 +40,7 @@ import { Village } from '../../../core/models/village.model';
                   class="form-control" 
                   placeholder="Search villages..." 
                   [(ngModel)]="searchTerm" 
-                  (input)="onSearch()">
+                  (keyup.enter)="onSearch()">
               </div>
             </div>
           </div>
