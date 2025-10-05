@@ -34,7 +34,7 @@ import { AuthService } from '../../../core/services/auth.service';
                 <span class="d-none d-md-inline">{{ currentUser?.username || 'Admin User' }}</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="#" (click)="viewProfile()">
+                <li><a class="dropdown-item" href="#" (click)="viewProfile($event)">
                   <i class="bi bi-person me-2"></i>Profile
                 </a></li>
                 <li><a class="dropdown-item" href="#" (click)="viewSettings()">
@@ -124,9 +124,17 @@ export class HeaderComponent {
     this.toggleSidebar.emit();
   }
 
-  viewProfile() {
-    console.log('View profile');
-    // TODO: Implement profile view
+  viewProfile(event: Event) {
+    event.preventDefault();
+    console.log('View profile clicked - navigating to /profile');
+    console.log('Current route:', this.router.url);
+    
+    this.router.navigate(['/profile']).then(success => {
+      console.log('Navigation to profile:', success ? 'successful' : 'failed');
+      console.log('New route after navigation:', this.router.url);
+    }).catch(error => {
+      console.error('Navigation error:', error);
+    });
   }
 
   viewSettings() {

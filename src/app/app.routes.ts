@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { PasswordChangeGuard } from './core/guards/password-change.guard';
 
 export const routes: Routes = [
   {
@@ -12,10 +13,19 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
   {
+    path: 'change-password',
+    loadComponent: () => import('./features/auth/change-password/change-password.component').then(m => m.ChangePasswordComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '',
     loadComponent: () => import('./shared/components/layout/layout.component').then(m => m.LayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, PasswordChangeGuard],
     children: [
+      {
+        path: 'profile',
+        loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)
+      },
       {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
@@ -119,6 +129,23 @@ export const routes: Routes = [
       {
         path: 'political-parties/edit/:uid',
         loadComponent: () => import('./features/political-parties/political-party-form/political-party-form.component').then(m => m.PoliticalPartyFormComponent)
+      },
+      {
+        path: 'admin-users',
+        loadComponent: () => import('./features/admin-users/admin-user-list/admin-user-list.component').then(m => m.AdminUserListComponent)
+      },
+      {
+        path: 'admin-users/create',
+        loadComponent: () => import('./features/admin-users/admin-user-form/admin-user-form.component').then(m => m.AdminUserFormComponent)
+      },
+      {
+        path: 'admin-users/edit/:uid',
+        loadComponent: () => import('./features/admin-users/admin-user-form/admin-user-form.component').then(m => m.AdminUserFormComponent)
+      },
+      {
+        path: '',
+        redirectTo: '/dashboard',
+        pathMatch: 'full'
       }
     ]
   },

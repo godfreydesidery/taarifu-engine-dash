@@ -101,6 +101,14 @@ import { RouterModule } from '@angular/router';
               </a>
             </li>
             
+            <!-- Admin Users -->
+            <li class="nav-item" *ngIf="!isCollapsed || isHovered">
+              <a class="nav-link" routerLink="/admin-users" routerLinkActive="active">
+                <i class="bi bi-person-gear"></i>
+                <span>Admin Users</span>
+              </a>
+            </li>
+            
             <!-- Collapsed view - show individual items -->
             <li class="nav-item collapsed-item" *ngIf="isCollapsed && !isHovered">
               <a class="nav-link collapsed-link" routerLink="/regions" routerLinkActive="active" title="Regions" (click)="preventSubmenuBehavior($event)">
@@ -145,6 +153,11 @@ import { RouterModule } from '@angular/router';
             <li class="nav-item collapsed-item" *ngIf="isCollapsed && !isHovered">
               <a class="nav-link collapsed-link" routerLink="/political-parties" routerLinkActive="active" title="Political Parties" (click)="preventSubmenuBehavior($event)">
                 <i class="bi bi-flag"></i>
+              </a>
+            </li>
+            <li class="nav-item collapsed-item" *ngIf="isCollapsed && !isHovered">
+              <a class="nav-link collapsed-link" routerLink="/admin-users" routerLinkActive="active" title="Admin Users" (click)="preventSubmenuBehavior($event)">
+                <i class="bi bi-person-gear"></i>
               </a>
             </li>
           </ul>

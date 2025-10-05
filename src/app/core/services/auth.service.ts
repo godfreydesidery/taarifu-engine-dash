@@ -90,4 +90,22 @@ export class AuthService {
       }
     }
   }
+
+  // Forgot Password - Send reset link to email
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/admin/v1/auth/forgot-password`, { email });
+  }
+
+  // Reset Password - Reset password with token
+  resetPassword(token: string, newPassword: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/admin/v1/auth/reset-password`, { 
+      token, 
+      newPassword 
+    });
+  }
+
+  // Update current user data (e.g., after password change)
+  updateCurrentUser(user: User): void {
+    this.setCurrentUser(user);
+  }
 }

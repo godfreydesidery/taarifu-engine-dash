@@ -71,7 +71,63 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
               <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
               {{ isLoading ? 'Logging in...' : 'Login' }}
             </button>
+            
+            <div class="text-center mt-3">
+              <button 
+                type="button" 
+                class="btn btn-link text-decoration-none" 
+                (click)="showForgotPassword = !showForgotPassword">
+                <i class="bi bi-key me-1"></i>
+                Forgot Password?
+              </button>
+            </div>
           </form>
+
+          <!-- Forgot Password Form -->
+          <div *ngIf="showForgotPassword" class="mt-4 p-3 border rounded">
+            <h6 class="mb-3">
+              <i class="bi bi-key me-2"></i>
+              Reset Password
+            </h6>
+            <form [formGroup]="forgotPasswordForm" (ngSubmit)="onForgotPasswordSubmit()">
+              <div class="mb-3">
+                <label for="resetEmail" class="form-label">Email Address</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                  <input 
+                    type="email" 
+                    class="form-control" 
+                    id="resetEmail"
+                    formControlName="email" 
+                    placeholder="Enter your email address"
+                    [class.is-invalid]="forgotPasswordForm.get('email')?.invalid && forgotPasswordForm.get('email')?.touched">
+                  <div class="invalid-feedback" *ngIf="forgotPasswordForm.get('email')?.hasError('required')">
+                    Email is required
+                  </div>
+                  <div class="invalid-feedback" *ngIf="forgotPasswordForm.get('email')?.hasError('email')">
+                    Please enter a valid email address
+                  </div>
+                </div>
+              </div>
+              
+              <div class="d-flex gap-2">
+                <button 
+                  type="submit" 
+                  class="btn btn-warning flex-fill" 
+                  [disabled]="forgotPasswordForm.invalid || isResettingPassword">
+                  <span *ngIf="isResettingPassword" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  <i *ngIf="!isResettingPassword" class="bi bi-send me-1"></i>
+                  {{ isResettingPassword ? 'Sending...' : 'Send Reset Link' }}
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-outline-secondary" 
+                  (click)="showForgotPassword = false">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
       
@@ -112,8 +168,11 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
 })
 export class LoginComponent {
   loginForm: FormGroup;
+  forgotPasswordForm: FormGroup;
   hidePassword = true;
   isLoading = false;
+  isResettingPassword = false;
+  showForgotPassword = false;
 
   constructor(
     private fb: FormBuilder,
@@ -124,6 +183,10 @@ export class LoginComponent {
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
       password: ['', [Validators.required]]
+    });
+
+    this.forgotPasswordForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]]
     });
     
     // Clear any existing invalid tokens on login page load
@@ -144,7 +207,14 @@ export class LoginComponent {
         next: (response) => {
           this.isLoading = false;
           if (response.status) {
-            this.router.navigate(['/dashboard']);
+            // Check if password change is required
+            const currentUser = this.authService.getCurrentUser();
+            if (currentUser && currentUser.requirePasswordChange) {
+              this.toastService.warning('Password Change Required', 'You must change your password before continuing.');
+              this.router.navigate(['/change-password']);
+            } else {
+              this.router.navigate(['/dashboard']);
+            }
           }
         },
         error: (error) => {
@@ -156,6 +226,38 @@ export class LoginComponent {
             'Login Failed',
             error.error?.message || 'Please check your credentials and try again.'
           );
+        }
+      });
+    }
+  }
+
+  onForgotPasswordSubmit() {
+    if (this.forgotPasswordForm.valid) {
+      this.isResettingPassword = true;
+      const email = this.forgotPasswordForm.value.email;
+      
+      this.authService.forgotPassword(email).subscribe({
+        next: (response) => {
+          this.isResettingPassword = false;
+          this.toastService.success(
+            'Reset Link Sent', 
+            'If an account with this email exists, a password reset link has been sent to your email address.'
+          );
+          this.showForgotPassword = false;
+          this.forgotPasswordForm.reset();
+        },
+        error: (error) => {
+          this.isResettingPassword = false;
+          console.error('Forgot password error:', error);
+          
+          // Show success message regardless of error for security (don't reveal if email exists)
+          // This prevents user enumeration attacks
+          this.toastService.success(
+            'Reset Link Sent', 
+            'If an account with this email exists, a password reset link has been sent to your email address.'
+          );
+          this.showForgotPassword = false;
+          this.forgotPasswordForm.reset();
         }
       });
     }
