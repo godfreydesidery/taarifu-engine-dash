@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../core/services/auth.service';
 import { RegionService } from '../../core/services/region.service';
 import { DistrictService } from '../../core/services/district.service';
@@ -21,6 +22,16 @@ import { AreaStats } from '../../core/models/area.model';
 import { ParliamentStats } from '../../core/models/parliament.model';
 import { PoliticalPartyStats } from '../../core/models/political-party.model';
 
+interface StatCard {
+  label: string;
+  value: string;
+  icon: string;
+  color: string;
+  change: string;
+  trend: 'up' | 'down' | 'stable';
+  route?: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -30,320 +41,547 @@ import { PoliticalPartyStats } from '../../core/models/political-party.model';
   ],
   template: `
     <div class="dashboard-container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 class="h3 mb-1">Dashboard</h1>
-          <p class="text-muted">Welcome back, {{ currentUser?.username }}!</p>
-        </div>
-      </div>
-      
-      <div class="row g-4 mb-4">
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-geo-alt-fill text-primary" style="font-size: 2.5rem;"></i>
+      <!-- Dashboard Header -->
+      <header class="obus-dashboard-header">
+        <div class="obus-header-content">
+          <h1 class="obus-dashboard-title">
+            <span class="obus-title-icon" [innerHTML]="getIconSvg('rocket')"></span>
+            Taarifu Engine
+            <span class="obus-title-subtitle">Dashboard</span>
+          </h1>
+          <div class="obus-header-right">
+            <div class="obus-date-time">
+              <div class="obus-date-item">
+                <span class="obus-date-icon" [innerHTML]="getIconSvg('calendar')"></span>
+                <span class="obus-date-text">{{ currentDate }}</span>
               </div>
-              <h5 class="card-title">Total Regions</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingRegions" class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                <span *ngIf="!loadingRegions" class="display-4 text-primary fw-bold">{{ regionStats?.totalRegions || 0 }}</span>
+              <div class="obus-time-item">
+                <span class="obus-time-icon" [innerHTML]="getIconSvg('clock')"></span>
+                <span class="obus-time-text">{{ currentTime }}</span>
               </div>
-              <p class="text-muted">{{ regionStats?.activeRegions || 0 }} active regions</p>
-              <a routerLink="/regions" class="btn btn-primary">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Regions
-              </a>
             </div>
           </div>
         </div>
+      </header>
 
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-building text-success" style="font-size: 2.5rem;"></i>
+      <!-- Stats Section -->
+      <section class="stats-section">
+        <div class="stats-grid">
+          <div 
+            *ngFor="let stat of stats" 
+            class="stat-card stat-{{ stat.color }}"
+            [routerLink]="stat.route"
+          >
+            <div class="stat-icon-wrapper">
+              <div class="stat-icon" [innerHTML]="getIconSvg(stat.icon)"></div>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">{{ stat.label }}</div>
+              <div class="stat-value">{{ stat.value }}</div>
+              <div class="stat-change" [class]="'trend-' + stat.trend">
+                <span class="change-icon" [innerHTML]="getIconSvg('trendUp')"></span>
+                {{ stat.change }}
               </div>
-              <h5 class="card-title">Total Districts</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingDistricts" class="spinner-border spinner-border-sm text-success" role="status"></div>
-                <span *ngIf="!loadingDistricts" class="display-4 text-success fw-bold">{{ districtStats?.totalDistricts || 0 }}</span>
-              </div>
-              <p class="text-muted">{{ districtStats?.activeDistricts || 0 }} active districts</p>
-              <a routerLink="/districts" class="btn btn-success">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Districts
-              </a>
             </div>
           </div>
         </div>
+      </section>
 
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-house text-warning" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Total Wards</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingWards" class="spinner-border spinner-border-sm text-warning" role="status"></div>
-                <span *ngIf="!loadingWards" class="display-4 text-warning fw-bold">{{ wardStats?.totalWards || 0 }}</span>
-              </div>
-              <p class="text-muted">{{ wardStats?.activeWards || 0 }} active wards</p>
-              <a routerLink="/wards" class="btn btn-warning">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Wards
-              </a>
-            </div>
-          </div>
+      <!-- Quick Actions -->
+      <section class="actions-section">
+        <h2 class="section-title">Quick Actions</h2>
+        <div class="actions-grid">
+          <a routerLink="/regions" class="action-card action-blue">
+            <div class="action-icon" [innerHTML]="getIconSvg('geo')"></div>
+            <div class="action-label">Manage Regions</div>
+          </a>
+          <a routerLink="/districts" class="action-card action-green">
+            <div class="action-icon" [innerHTML]="getIconSvg('building')"></div>
+            <div class="action-label">Manage Districts</div>
+          </a>
+          <a routerLink="/wards" class="action-card action-purple">
+            <div class="action-icon" [innerHTML]="getIconSvg('house')"></div>
+            <div class="action-label">Manage Wards</div>
+          </a>
+          <a routerLink="/admin-users" class="action-card action-blue">
+            <div class="action-icon" [innerHTML]="getIconSvg('users')"></div>
+            <div class="action-label">Admin Users</div>
+          </a>
         </div>
-
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-house-door text-danger" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Total Villages</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingVillages" class="spinner-border spinner-border-sm text-danger" role="status"></div>
-                <span *ngIf="!loadingVillages" class="display-4 text-danger fw-bold">{{ villageStats?.totalVillages || 0 }}</span>
-              </div>
-              <p class="text-muted">{{ villageStats?.activeVillages || 0 }} active villages</p>
-              <a routerLink="/villages" class="btn btn-danger">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Villages
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-house-door-fill text-dark" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Total Hamlets</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingHamlets" class="spinner-border spinner-border-sm text-dark" role="status"></div>
-                <span *ngIf="!loadingHamlets" class="display-4 text-dark fw-bold">{{ hamletStats?.totalHamlets || 0 }}</span>
-              </div>
-              <p class="text-muted">{{ hamletStats?.activeHamlets || 0 }} active hamlets</p>
-              <a routerLink="/hamlets" class="btn btn-dark">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Hamlets
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-flag text-info" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Total Constituencies</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingConstituencies" class="spinner-border spinner-border-sm text-info" role="status"></div>
-                <span *ngIf="!loadingConstituencies" class="display-4 text-info fw-bold">{{ constituencyStats?.totalConstituencies || 0 }}</span>
-              </div>
-              <p class="text-muted">{{ constituencyStats?.activeConstituencies || 0 }} active constituencies</p>
-              <a routerLink="/constituencies" class="btn btn-info">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Constituencies
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-layers text-secondary" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Total Areas</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingAreas" class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-                <span *ngIf="!loadingAreas" class="display-4 text-secondary fw-bold">{{ areaStats?.totalAreas || 0 }}</span>
-              </div>
-              <p class="text-muted">All area types combined</p>
-              <a routerLink="/areas" class="btn btn-secondary">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Areas
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-building text-dark" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Total Parliaments</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingParliaments" class="spinner-border spinner-border-sm text-dark" role="status"></div>
-                <span *ngIf="!loadingParliaments" class="display-4 text-dark fw-bold">{{ parliamentStats?.totalParliaments || 0 }}</span>
-              </div>
-              <p class="text-muted">{{ parliamentStats?.activeParliaments || 0 }} active parliaments</p>
-              <a routerLink="/parliaments" class="btn btn-dark">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Parliaments
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-flag text-danger" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Political Parties</h5>
-              <div class="stat-value mb-2">
-                <div *ngIf="loadingPoliticalParties" class="spinner-border spinner-border-sm text-danger" role="status"></div>
-                <span *ngIf="!loadingPoliticalParties" class="display-4 text-danger fw-bold">{{ politicalPartyStats?.totalParties || 0 }}</span>
-              </div>
-              <p class="text-muted">{{ politicalPartyStats?.activeParties || 0 }} active parties</p>
-              <a routerLink="/political-parties" class="btn btn-danger">
-                <i class="bi bi-arrow-right me-1"></i>
-                View Parties
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <i class="bi bi-plus-circle text-secondary" style="font-size: 2.5rem;"></i>
-              </div>
-              <h5 class="card-title">Quick Actions</h5>
-              <p class="text-muted">Create new entities quickly</p>
-              <div class="d-grid gap-2">
-                <a routerLink="/regions/create" class="btn btn-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New Region
-                </a>
-                <a routerLink="/districts/create" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New District
-                </a>
-                <a routerLink="/wards/create" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New Ward
-                </a>
-                <a routerLink="/villages/create" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New Village
-                </a>
-                <a routerLink="/hamlets/create" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New Hamlet
-                </a>
-                <a routerLink="/constituencies/create" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New Constituency
-                </a>
-                <a routerLink="/parliaments/create" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New Parliament
-                </a>
-                <a routerLink="/political-parties/create" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-plus me-1"></i>
-                  New Political Party
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">
-                <i class="bi bi-activity me-2"></i>
-                Recent Activity
-              </h5>
-            </div>
-            <div class="card-body">
-              <p class="text-muted">Activity tracking will be implemented soon...</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   `,
   styles: [`
+    /* ===================================
+       OBUS PROFESSIONAL DASHBOARD STYLES
+       =================================== */
+
     .dashboard-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem;
+      width: 100%;
+      min-height: fit-content;
+      background: var(--obus-off-white);
+      font-family: var(--obus-font-primary);
+      padding-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
     }
 
-    .card {
-      border: none;
-      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-      transition: box-shadow 0.15s ease-in-out;
+    .obus-dashboard-header {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--obus-light-gray);
+      padding: 1.2rem 1.6rem;
+      margin: 1rem 1rem 1.2rem 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      border-radius: 12.8px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
     }
 
-    .card:hover {
-      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    .obus-dashboard-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3.2px;
+      background: var(--obus-gradient-primary);
+      box-shadow: 0 0.8px 3.2px rgba(32, 82, 149, 0.3);
     }
 
-    .stat-value {
+    .obus-header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    .obus-dashboard-title {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      color: var(--obus-deep-blue);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .obus-title-icon {
+      width: 38.4px;
+      height: 38.4px;
+      min-width: 38.4px;
+      background: var(--obus-gradient-accent);
+      border-radius: 9.6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      animation: float 3s ease-in-out infinite;
+      box-shadow: 0 3.2px 12.8px rgba(32, 82, 149, 0.25);
+      padding: 8px;
     }
 
-    /* Mobile Responsive Styles */
-    @media (max-width: 576px) {
-      .dashboard-container {
-        padding: 0 0.5rem;
-      }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4.8px); }
+    }
 
-      .card-body {
-        padding: 1rem;
-      }
+    .obus-title-icon svg {
+      width: 100%;
+      height: 100%;
+      color: white;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+    }
 
-      .stat-value .display-4 {
-        font-size: 1.5rem;
-      }
+    .obus-title-subtitle {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--obus-medium-gray);
+      margin-left: 0.2rem;
+    }
 
-      .card-title {
-        font-size: 1rem;
-      }
+    .obus-header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+    }
 
-      .btn {
-        font-size: 0.875rem;
-        padding: 0.375rem 0.75rem;
-      }
+    .obus-date-time {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding: 0.5rem 0.8rem;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+      border-radius: 9.6px;
+      border: 1px solid rgba(32, 82, 149, 0.12);
+      box-shadow: 0 1.6px 9.6px rgba(0, 0, 0, 0.05);
+    }
 
-      .d-grid .btn {
-        margin-bottom: 0.25rem;
+    .obus-date-item,
+    .obus-time-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .obus-date-icon,
+    .obus-time-icon {
+      width: 12.8px;
+      height: 12.8px;
+      color: var(--obus-ocean-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .obus-date-icon svg,
+    .obus-time-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .obus-date-text,
+    .obus-time-text {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--obus-deep-blue);
+    }
+
+    .stats-section {
+      margin-bottom: 1rem;
+      margin-left: 1rem;
+      margin-right: 1rem;
+      flex-shrink: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 9.6px;
+      padding: 1.2rem;
+      box-shadow: 0 0.8px 2.4px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: 1px solid #f1f5f9;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-1.6px);
+      box-shadow: 0 3.2px 9.6px rgba(0, 0, 0, 0.08);
+      border-color: #e2e8f0;
+    }
+
+    .stat-card.stat-blue:hover {
+      border-color: #93c5fd;
+    }
+
+    .stat-card.stat-green:hover {
+      border-color: #86efac;
+    }
+
+    .stat-card.stat-purple:hover {
+      border-color: #c4b5fd;
+    }
+
+    .stat-icon-wrapper {
+      margin-bottom: 0.8rem;
+    }
+
+    .stat-icon {
+      width: 35.2px;
+      height: 35.2px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .stat-blue .stat-icon {
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      color: #1e40af;
+    }
+
+    .stat-green .stat-icon {
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      color: #047857;
+    }
+
+    .stat-purple .stat-icon {
+      background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+      color: #6d28d9;
+    }
+
+    .stat-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .stat-content {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: #64748b;
+      font-weight: 500;
+      margin-bottom: 0.32rem;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 0.32rem;
+      line-height: 1;
+      display: block;
+    }
+
+    .stat-change {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.24rem;
+      font-size: 0.6rem;
+      font-weight: 500;
+    }
+
+    .stat-change.trend-up {
+      color: #059669;
+    }
+
+    .stat-change.trend-down {
+      color: #dc2626;
+    }
+
+    .stat-change.trend-stable {
+      color: #64748b;
+    }
+
+    .change-icon {
+      width: 8px;
+      height: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .change-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .actions-section {
+      margin-bottom: 0;
+      margin-left: 1rem;
+      margin-right: 1rem;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 0.8rem;
+      letter-spacing: -0.01em;
+    }
+
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .action-card {
+      background: white;
+      border-radius: 9.6px;
+      padding: 1.2rem;
+      box-shadow: 0 0.8px 2.4px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.64rem;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid #f1f5f9;
+      min-height: 96px;
+    }
+
+    .action-card:hover {
+      transform: translateY(-1.6px);
+      box-shadow: 0 3.2px 9.6px rgba(0, 0, 0, 0.08);
+    }
+
+    .action-card.action-blue:hover {
+      border-color: #93c5fd;
+    }
+
+    .action-card.action-green:hover {
+      border-color: #86efac;
+    }
+
+    .action-card.action-purple:hover {
+      border-color: #c4b5fd;
+    }
+
+    .action-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7.2px;
+    }
+
+    .action-blue .action-icon {
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      color: #1e40af;
+    }
+
+    .action-green .action-icon {
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      color: #047857;
+    }
+
+    .action-purple .action-icon {
+      background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+      color: #6d28d9;
+    }
+
+    .action-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .action-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #334155;
+      text-align: center;
+    }
+
+    @media (max-width: 1024px) {
+      .stats-grid,
+      .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
 
     @media (max-width: 768px) {
-      .row.g-4 {
-        --bs-gutter-x: 1rem;
-        --bs-gutter-y: 1rem;
+      .obus-dashboard-header {
+        padding: 0.8rem;
       }
+
+      .obus-header-content {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+
+      .obus-dashboard-title {
+        font-size: 1.2rem;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .obus-title-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      .stats-grid,
+      .actions-grid {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .obus-dashboard-title {
+        font-size: 1rem;
+      }
+
+      .stat-value {
+        font-size: 1.2rem;
+      }
+
+      .section-title {
+        font-size: 0.75rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .action-card:focus-visible,
+    .stat-card:focus-visible {
+      outline: 2px solid #205295;
+      outline-offset: 2px;
     }
   `]
 })
 export class DashboardComponent implements OnInit {
+  title = 'Taarifu Engine';
+  currentDate = new Date().toLocaleDateString();
+  currentTime = new Date().toLocaleTimeString();
   currentUser = this.authService.getCurrentUser();
+  
+  stats: StatCard[] = [
+    {
+      label: 'Total Regions',
+      value: '...',
+      icon: 'geo',
+      color: 'blue',
+      change: '+0%',
+      trend: 'stable',
+      route: '/regions',
+    },
+    {
+      label: 'Total Districts',
+      value: '...',
+      icon: 'building',
+      color: 'green',
+      change: '+0%',
+      trend: 'stable',
+      route: '/districts',
+    },
+    {
+      label: 'Total Wards',
+      value: '...',
+      icon: 'house',
+      color: 'purple',
+      change: '+0%',
+      trend: 'stable',
+      route: '/wards',
+    },
+    {
+      label: 'Total Villages',
+      value: '...',
+      icon: 'houseDoor',
+      color: 'blue',
+      change: '+0%',
+      trend: 'stable',
+      route: '/villages',
+    },
+  ];
+
   regionStats: RegionStats | null = null;
   districtStats: DistrictStats | null = null;
   wardStats: WardStats | null = null;
@@ -364,19 +602,22 @@ export class DashboardComponent implements OnInit {
   loadingPoliticalParties = false;
 
   constructor(
-    private authService: AuthService,
-    private regionService: RegionService,
-    private districtService: DistrictService,
-    private wardService: WardService,
-    private villageService: VillageService,
-    private hamletService: HamletService,
-    private constituencyService: ConstituencyService,
-    private areaService: AreaService,
-    private parliamentService: ParliamentService,
-    private politicalPartyService: PoliticalPartyService
+    private readonly authService: AuthService,
+    private readonly regionService: RegionService,
+    private readonly districtService: DistrictService,
+    private readonly wardService: WardService,
+    private readonly villageService: VillageService,
+    private readonly hamletService: HamletService,
+    private readonly constituencyService: ConstituencyService,
+    private readonly areaService: AreaService,
+    private readonly parliamentService: ParliamentService,
+    private readonly politicalPartyService: PoliticalPartyService,
+    private readonly sanitizer: DomSanitizer
   ) {}
 
   ngOnInit() {
+    this.updateTime();
+    setInterval(() => this.updateTime(), 1000);
     this.loadRegionStats();
     this.loadDistrictStats();
     this.loadWardStats();
@@ -388,6 +629,46 @@ export class DashboardComponent implements OnInit {
     this.loadPoliticalPartyStats();
   }
 
+  updateTime() {
+    this.currentTime = new Date().toLocaleTimeString();
+  }
+
+  calculateTrend(
+    current: number,
+    previous: number
+  ): { change: string; trend: 'up' | 'down' | 'stable' } {
+    if (previous === 0) {
+      return { change: '+0%', trend: 'stable' };
+    }
+
+    const percentageChange = ((current - previous) / previous) * 100;
+    const roundedChange = Math.round(percentageChange);
+
+    if (roundedChange > 0) {
+      return { change: `+${roundedChange}%`, trend: 'up' };
+    } else if (roundedChange < 0) {
+      return { change: `${roundedChange}%`, trend: 'down' };
+    } else {
+      return { change: '+0%', trend: 'stable' };
+    }
+  }
+
+  getIconSvg(iconName: string): SafeHtml {
+    const icons: { [key: string]: string } = {
+      rocket: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>',
+      calendar: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
+      clock: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>',
+      geo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>',
+      building: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"/></svg>',
+      house: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>',
+      houseDoor: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>',
+      users: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>',
+      trendUp: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/></svg>',
+    };
+    const iconSvg = icons[iconName] || icons['users'];
+    return this.sanitizer.bypassSecurityTrustHtml(iconSvg);
+  }
+
   private loadRegionStats() {
     this.loadingRegions = true;
     this.regionService.getRegionStats().subscribe({
@@ -395,15 +676,62 @@ export class DashboardComponent implements OnInit {
         this.loadingRegions = false;
         if (response.status) {
           this.regionStats = response.data;
+          this.updateStats();
         }
       },
       error: (error) => {
         this.loadingRegions = false;
         console.error('Error loading region stats:', error);
-        // Set default values if API fails
         this.regionStats = { totalRegions: 0, activeRegions: 0, inactiveRegions: 0 };
+        this.updateStats();
       }
     });
+  }
+
+  private updateStats() {
+    const regionTrend = this.calculateTrend(this.regionStats?.totalRegions || 0, 0);
+    const districtTrend = this.calculateTrend(this.districtStats?.totalDistricts || 0, 0);
+    const wardTrend = this.calculateTrend(this.wardStats?.totalWards || 0, 0);
+    const villageTrend = this.calculateTrend(this.villageStats?.totalVillages || 0, 0);
+
+    this.stats = [
+      {
+        label: 'Total Regions',
+        value: (this.regionStats?.totalRegions || 0).toString(),
+        icon: 'geo',
+        color: 'blue',
+        change: regionTrend.change,
+        trend: regionTrend.trend,
+        route: '/regions',
+      },
+      {
+        label: 'Total Districts',
+        value: (this.districtStats?.totalDistricts || 0).toString(),
+        icon: 'building',
+        color: 'green',
+        change: districtTrend.change,
+        trend: districtTrend.trend,
+        route: '/districts',
+      },
+      {
+        label: 'Total Wards',
+        value: (this.wardStats?.totalWards || 0).toString(),
+        icon: 'house',
+        color: 'purple',
+        change: wardTrend.change,
+        trend: wardTrend.trend,
+        route: '/wards',
+      },
+      {
+        label: 'Total Villages',
+        value: (this.villageStats?.totalVillages || 0).toString(),
+        icon: 'houseDoor',
+        color: 'blue',
+        change: villageTrend.change,
+        trend: villageTrend.trend,
+        route: '/villages',
+      },
+    ];
   }
 
   private loadDistrictStats() {
@@ -413,13 +741,14 @@ export class DashboardComponent implements OnInit {
         this.loadingDistricts = false;
         if (response.status) {
           this.districtStats = response.data;
+          this.updateStats();
         }
       },
       error: (error) => {
         this.loadingDistricts = false;
         console.error('Error loading district stats:', error);
-        // Set default values if API fails
         this.districtStats = { totalDistricts: 0, activeDistricts: 0, inactiveDistricts: 0 };
+        this.updateStats();
       }
     });
   }
@@ -431,13 +760,14 @@ export class DashboardComponent implements OnInit {
         this.loadingWards = false;
         if (response.status) {
           this.wardStats = response.data;
+          this.updateStats();
         }
       },
       error: (error) => {
         this.loadingWards = false;
         console.error('Error loading ward stats:', error);
-        // Set default values if API fails
         this.wardStats = { totalWards: 0, activeWards: 0, inactiveWards: 0 };
+        this.updateStats();
       }
     });
   }
@@ -449,13 +779,14 @@ export class DashboardComponent implements OnInit {
         this.loadingVillages = false;
         if (response.status) {
           this.villageStats = response.data;
+          this.updateStats();
         }
       },
       error: (error) => {
         this.loadingVillages = false;
         console.error('Error loading village stats:', error);
-        // Set default values if API fails
         this.villageStats = { totalVillages: 0, activeVillages: 0, inactiveVillages: 0 };
+        this.updateStats();
       }
     });
   }

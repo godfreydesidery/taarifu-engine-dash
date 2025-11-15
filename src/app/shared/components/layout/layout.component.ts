@@ -20,7 +20,10 @@ import { ToastComponent } from '../toast/toast.component';
   template: `
     <div class="app-layout">
       <!-- Header -->
-      <app-header (toggleSidebar)="toggleSidebar()"></app-header>
+      <app-header 
+        [sidebarCollapsed]="sidebarCollapsed"
+        [isMobile]="isMobile"
+        (toggleSidebar)="toggleSidebar()"></app-header>
       
       <!-- Main Content Area -->
       <div class="main-wrapper">
@@ -62,25 +65,25 @@ import { ToastComponent } from '../toast/toast.component';
 
     .main-content {
       flex: 1;
-      margin-left: 250px; /* Sidebar width */
+      margin-left: 280px; /* Sidebar width */
       min-height: calc(100vh - 56px);
       display: flex;
       flex-direction: column;
-      transition: margin-left 0.3s ease;
-      background-color: #f8f9fa;
+      transition: margin-left var(--obus-duration-normal) var(--obus-ease-in-out);
+      background-color: var(--obus-off-white);
     }
 
     .main-content.sidebar-collapsed {
-      margin-left: 60px; /* Collapsed sidebar width */
+      margin-left: 72px; /* Collapsed sidebar width */
     }
 
     .content-wrapper {
       flex: 1;
-      padding: 2rem;
-      background-color: #fff;
-      margin: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: var(--obus-space-8);
+      background-color: var(--obus-pure-white);
+      margin: var(--obus-space-4);
+      border-radius: var(--obus-radius-xl);
+      box-shadow: var(--obus-shadow-md);
       min-height: calc(100vh - 200px);
     }
 

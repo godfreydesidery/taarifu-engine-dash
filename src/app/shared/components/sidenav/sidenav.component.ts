@@ -12,9 +12,9 @@ import { RouterModule } from '@angular/router';
   template: `
     <nav class="sidebar" [class.collapsed]="isCollapsed" [class.mobile-show]="!isCollapsed" (mouseenter)="onMouseEnter()" (mouseleave)="onMouseLeave()">
       <div class="sidebar-content">
-        <div class="sidebar-header text-center mb-4">
+        <div class="sidebar-header">
           <div class="sidebar-brand">
-            <i class="bi bi-geo-alt-fill text-primary"></i>
+            <i class="bi bi-geo-alt-fill"></i>
             <span class="brand-text" *ngIf="!isCollapsed || isHovered">Taarifu</span>
           </div>
           <small class="text-muted" *ngIf="!isCollapsed || isHovered">Administration</small>
@@ -179,50 +179,65 @@ import { RouterModule } from '@angular/router';
   styles: [`
     .sidebar {
       position: fixed;
-      top: 56px;
-      bottom: 0;
+      top: 0;
       left: 0;
-      z-index: 100;
-      width: 250px;
-      background-color: #f8f9fa;
-      border-right: 1px solid #dee2e6;
-      transition: width 0.3s ease;
+      width: 280px;
+      height: 100vh;
+      background: var(--obus-gradient-primary);
+      color: var(--obus-pure-white);
+      border-right: none;
+      transition: width var(--obus-duration-normal) var(--obus-ease-in-out);
       overflow-x: hidden;
       overflow-y: auto;
+      box-shadow: var(--obus-shadow-2xl);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(10px);
+      margin: 0;
+      padding: 0;
     }
 
     .sidebar.collapsed {
-      width: 60px;
+      width: 72px;
     }
 
     .sidebar-content {
-      padding: 1rem 0;
+      padding: var(--obus-space-2) 0;
       height: 100%;
       display: flex;
       flex-direction: column;
     }
 
     .sidebar-header {
-      padding: 0 1rem;
-      border-bottom: 1px solid #dee2e6;
-      padding-bottom: 1rem;
-      margin-bottom: 1rem;
+      padding: 0.5rem var(--obus-space-3);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      background: transparent;
+      margin: 0;
+      position: relative;
+      top: 0;
     }
 
     .sidebar-brand {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      gap: var(--obus-space-2);
     }
 
     .sidebar-brand i {
-      font-size: 1.5rem;
+      font-size: var(--obus-text-h3);
+      color: var(--obus-pure-white);
     }
 
     .brand-text {
-      font-weight: 600;
-      color: #007bff;
+      font-weight: var(--obus-font-extrabold);
+      color: var(--obus-pure-white);
+      font-family: var(--obus-font-primary);
     }
 
     .sidebar-nav {
@@ -233,21 +248,39 @@ import { RouterModule } from '@angular/router';
     .sidebar .nav-link {
       display: flex;
       align-items: center;
-      padding: 0.75rem 1rem;
-      margin: 0.25rem 0;
-      border-radius: 8px;
-      font-weight: 500;
-      color: #495057;
+      padding: var(--obus-space-3) var(--obus-space-4);
+      margin: var(--obus-space-1) var(--obus-space-2);
+      border-radius: var(--obus-radius-md);
+      font-weight: var(--obus-font-medium);
+      color: rgba(255, 255, 255, 0.95);
       text-decoration: none;
-      transition: all 0.3s ease;
+      transition: all var(--obus-duration-normal) var(--obus-ease-out);
       white-space: nowrap;
+      font-family: var(--obus-font-primary);
+      position: relative;
+      width: calc(100% - var(--obus-space-4));
+    }
+
+    .sidebar .nav-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 70%;
+      background: var(--obus-pure-white);
+      border-radius: 0 var(--obus-radius-sm) var(--obus-radius-sm) 0;
+      transition: width var(--obus-duration-normal) var(--obus-ease-out);
     }
 
     .sidebar .nav-link i {
-      font-size: 1.1rem;
+      font-size: var(--obus-text-base);
       width: 20px;
       text-align: center;
-      margin-right: 0.75rem;
+      margin-right: var(--obus-space-3);
+      color: rgba(255, 255, 255, 0.9);
+      transition: all var(--obus-duration-fast) var(--obus-ease-out);
     }
 
     .sidebar.collapsed .nav-link i {
@@ -255,25 +288,40 @@ import { RouterModule } from '@angular/router';
     }
 
     .sidebar .nav-link:hover {
-      color: #007bff;
-      background-color: #e7f1ff;
-      transform: translateX(2px);
+      color: var(--obus-pure-white);
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+
+    .sidebar .nav-link:hover::before {
+      width: 3px;
+    }
+
+    .sidebar .nav-link:hover i {
+      color: var(--obus-pure-white);
+      transform: scale(1.1);
     }
 
     .sidebar .nav-link.active {
-      color: #fff;
-      background-color: #007bff;
-      box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+      color: var(--obus-pure-white);
+      background: var(--obus-gradient-accent);
+      box-shadow: var(--obus-shadow-md);
+    }
+
+    .sidebar .nav-link.active::before {
+      width: 4px;
+      height: 80%;
+      background: var(--obus-pure-white);
     }
 
     .sidebar .nav-link.active:hover {
-      background-color: #0056b3;
+      background: var(--obus-ocean-blue);
       transform: none;
     }
 
     .sidebar hr {
-      border-color: #dee2e6;
-      margin: 1rem 0;
+      border-color: rgba(255, 255, 255, 0.1);
+      margin: var(--obus-space-4) 0;
     }
 
     /* Nested Menu Styles */
@@ -292,25 +340,28 @@ import { RouterModule } from '@angular/router';
     }
 
     .nav-link-parent.expanded {
-      background-color: #e7f1ff;
-      color: #007bff;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--obus-pure-white);
     }
 
     .submenu {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s ease, opacity 0.3s ease;
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      margin: 0.25rem 0;
+      transition: max-height var(--obus-duration-normal) var(--obus-ease-out), opacity var(--obus-duration-normal) var(--obus-ease-out);
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: var(--obus-radius-md);
+      margin: var(--obus-space-2) var(--obus-space-2) 0 var(--obus-space-2);
       opacity: 0;
       display: flex;
       flex-direction: column;
+      backdrop-filter: blur(5px);
     }
 
     .submenu.show {
-      max-height: none;
+      max-height: 1000px;
       opacity: 1;
+      padding: var(--obus-space-2) 0;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
     /* Submenu is always visible when expanded */
@@ -345,25 +396,26 @@ import { RouterModule } from '@angular/router';
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.75rem;
-      margin: 0.25rem 0;
-      border-radius: 8px;
-      font-weight: 500;
-      color: #495057;
+      padding: var(--obus-space-3);
+      margin: var(--obus-space-1) var(--obus-space-2);
+      border-radius: var(--obus-radius-md);
+      font-weight: var(--obus-font-medium);
+      color: rgba(255, 255, 255, 0.95);
       text-decoration: none;
-      transition: all 0.3s ease;
+      transition: all var(--obus-duration-normal) var(--obus-ease-out);
+      width: calc(100% - var(--obus-space-4));
     }
 
     .collapsed-link:hover {
-      color: #007bff;
-      background-color: #e7f1ff;
-      transform: none; /* Prevent any transform effects */
+      color: var(--obus-pure-white);
+      background: rgba(255, 255, 255, 0.1);
+      transform: none;
     }
 
     .collapsed-link.active {
-      color: #fff;
-      background-color: #007bff;
-      box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+      color: var(--obus-pure-white);
+      background: var(--obus-gradient-accent);
+      box-shadow: var(--obus-shadow-md);
     }
 
     .collapsed-link i {
@@ -384,23 +436,46 @@ import { RouterModule } from '@angular/router';
     /* All elements are always visible */
 
     .submenu-link {
-      padding: 0.5rem 1rem 0.5rem 2.5rem !important;
-      font-size: 0.9rem;
-      color: #6c757d;
-      margin: 0.1rem 0;
+      padding: var(--obus-space-2) var(--obus-space-4) var(--obus-space-2) var(--obus-space-8) !important;
+      font-size: var(--obus-text-small);
+      color: rgba(255, 255, 255, 0.85);
+      margin: var(--obus-space-1) 0;
       display: flex;
       align-items: center;
       width: 100%;
+      border-radius: var(--obus-radius-sm);
+      position: relative;
+      font-family: var(--obus-font-primary);
+    }
+
+    .submenu-link::before {
+      content: '';
+      position: absolute;
+      left: var(--obus-space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transition: all var(--obus-duration-fast) var(--obus-ease-out);
     }
 
     .submenu-link:hover {
-      background-color: #e9ecef;
-      color: #007bff;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--obus-pure-white);
+      transform: translateX(4px);
+    }
+
+    .submenu-link:hover::before {
+      width: 6px;
+      height: 6px;
+      background: var(--obus-pure-white);
     }
 
     .submenu-link.active {
-      background-color: #007bff;
-      color: #fff;
+      background: var(--obus-gradient-accent);
+      color: var(--obus-pure-white);
     }
 
     .submenu-link i {
@@ -434,14 +509,14 @@ import { RouterModule } from '@angular/router';
     @media (max-width: 768px) {
       .sidebar {
         position: fixed;
-        top: 56px;
+        top: 0;
         left: 0;
-        height: calc(100vh - 56px);
+        height: 100vh;
         z-index: 1000;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
-        width: 250px;
+        width: 280px;
       }
 
       .sidebar.mobile-show {
@@ -460,7 +535,7 @@ import { RouterModule } from '@angular/router';
 
       /* Hover behavior for desktop - expand sidebar width */
       .sidebar.collapsed:hover {
-        width: 250px;
+        width: 280px;
         z-index: 1001;
       }
 
