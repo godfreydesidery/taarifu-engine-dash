@@ -8,12 +8,14 @@ export interface AdminUser {
   username: string;
   /** Email address */
   email: string;
+  /** Phone number (Tanzanian format) */
+  phoneNumber: string | null;
   /** User type - always ADMIN for admin users */
   userType: 'ADMIN';
   /** Current status of the user */
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
   /** Password strength indicator */
-  passwordStrength: 'WEAK' | 'MEDIUM' | 'STRONG';
+  passwordStrength: PasswordStrength;
   /** Whether user must change password on next login */
   requirePasswordChange: boolean;
   /** Last login timestamp */
@@ -33,6 +35,10 @@ export interface CreateAdminUserRequest {
   username: string;
   /** Valid email address */
   email: string;
+  /** Phone number (optional, Tanzanian format: +255XXXXXXXXX, 0XXXXXXXXX, or 255XXXXXXXXX) */
+  phoneNumber?: string;
+  /** Whether user must change password on next login */
+  requirePasswordChange?: boolean;
   /** Initial status (defaults to ACTIVE if not provided) */
   status?: 'ACTIVE' | 'INACTIVE';
 }
@@ -46,10 +52,12 @@ export interface UpdateAdminUserRequest {
   username?: string;
   /** New email address */
   email?: string;
+  /** Phone number (optional, empty string to clear, Tanzanian format) */
+  phoneNumber?: string;
   /** New password (minimum 12 characters, strong complexity required) */
   password?: string;
   /** New status */
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
 }
 
 /**
@@ -90,12 +98,14 @@ export interface AdminUserResponse {
   username: string;
   /** Email address */
   email: string;
+  /** Phone number (Tanzanian format) */
+  phoneNumber: string | null;
   /** User type - always ADMIN for admin users */
   userType: 'ADMIN';
   /** Current status of the user */
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
   /** Password strength indicator */
-  passwordStrength: 'WEAK' | 'MEDIUM' | 'STRONG';
+  passwordStrength: PasswordStrength;
   /** Whether user must change password on next login */
   requirePasswordChange: boolean;
   /** Last login timestamp */
@@ -138,6 +148,43 @@ export interface EmailAvailabilityResponse {
   available: boolean;
   /** Descriptive message about availability */
   message: string;
+}
+
+/**
+ * Password strength levels
+ */
+export enum PasswordStrength {
+  WEAK = "WEAK",      // Color: #DC2626 (Red)
+  FAIR = "FAIR",      // Color: #F59E0B (Orange)
+  GOOD = "GOOD",      // Color: #10B981 (Green)
+  STRONG = "STRONG"   // Color: #059669 (Dark Green)
+}
+
+/**
+ * Request DTO for password validation
+ */
+export interface ValidatePasswordRequest {
+  password: string;
+  isAdminPassword?: boolean;  // Optional: Defaults to true
+}
+
+/**
+ * Response data for password validation
+ */
+export interface PasswordValidationData {
+  isValid: boolean;
+  strength: PasswordStrength;
+  messages: string[];
+}
+
+/**
+ * API response for password validation
+ */
+export interface ValidatePasswordResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: PasswordValidationData;
 }
 
 // Import existing types from auth.model.ts
@@ -192,3 +239,20 @@ export type ResetAdminUserPasswordResponse = ApiResponse<AdminUserResponse>;
  * API response for changing admin user password
  */
 export type ChangeAdminUserPasswordResponse = ApiResponse<AdminUserResponse>;
+
+/**
+ * Admin User Summary (for summaries endpoint)
+ */
+export interface AdminUserSummary {
+  uid: string;
+  username: string;
+  email: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
+  requirePasswordChange: boolean;
+  createdAt: string;
+}
+
+/**
+ * API response for getting admin user summaries by status
+ */
+export type AdminUserSummaryListResponse = PageResponse<AdminUserSummary>;

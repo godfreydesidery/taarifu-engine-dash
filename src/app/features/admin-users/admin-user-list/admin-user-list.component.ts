@@ -40,7 +40,15 @@ import { ToastService } from '../../../core/services/toast.service';
                   class="form-control" 
                   placeholder="Search admin users..." 
                   [(ngModel)]="searchTerm" 
-                  (keyup.enter)="onSearch()">
+                  (keyup.enter)="onSearchEnter($event)"
+                  (input)="onSearchInput()">
+                <button 
+                  class="btn btn-outline-secondary" 
+                  type="button" 
+                  (click)="onSearch()"
+                  title="Search">
+                  <i class="bi bi-search"></i>
+                </button>
               </div>
             </div>
             <div class="col-md-3">
@@ -49,6 +57,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
                 <option value="SUSPENDED">Suspended</option>
+                <option value="PENDING_VERIFICATION">Pending Verification</option>
               </select>
             </div>
           </div>
@@ -103,6 +112,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     Email
                     <i class="bi" [class.bi-arrow-up]="sortBy === 'email' && sortDir === 'asc'" [class.bi-arrow-down]="sortBy === 'email' && sortDir === 'desc'"></i>
                   </th>
+                  <th>Phone Number</th>
                   <th>User Type</th>
                   <th>Status</th>
                   <th>Password Strength</th>
@@ -122,6 +132,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     </div>
                   </td>
                   <td>{{ adminUser.email }}</td>
+                  <td>{{ adminUser.phoneNumber || '-' }}</td>
                   <td>
                     <span class="badge bg-info">{{ adminUser.userType }}</span>
                   </td>
@@ -129,14 +140,16 @@ import { ToastService } from '../../../core/services/toast.service';
                     <span class="badge" 
                           [class.bg-success]="adminUser.status === 'ACTIVE'" 
                           [class.bg-warning]="adminUser.status === 'INACTIVE'" 
-                          [class.bg-danger]="adminUser.status === 'SUSPENDED'">
+                          [class.bg-danger]="adminUser.status === 'SUSPENDED'"
+                          [class.bg-info]="adminUser.status === 'PENDING_VERIFICATION'">
                       {{ adminUser.status }}
                     </span>
                   </td>
                   <td>
                     <span class="badge" 
                           [class.bg-success]="adminUser.passwordStrength === 'STRONG'" 
-                          [class.bg-warning]="adminUser.passwordStrength === 'MEDIUM'" 
+                          [class.bg-info]="adminUser.passwordStrength === 'GOOD'"
+                          [class.bg-warning]="adminUser.passwordStrength === 'FAIR'" 
                           [class.bg-danger]="adminUser.passwordStrength === 'WEAK'">
                       {{ adminUser.passwordStrength }}
                     </span>
@@ -358,21 +371,34 @@ export class AdminUserListComponent implements OnInit {
     
     let observable;
     
-    if (this.searchTerm) {
+    // Trim search term and check if it's not empty
+    const trimmedSearchTerm = this.searchTerm?.trim();
+    
+    console.log('loadAdminUsers called:', {
+      searchTerm: this.searchTerm,
+      trimmedSearchTerm: trimmedSearchTerm,
+      statusFilter: this.statusFilter,
+      currentPage: this.currentPage,
+      pageSize: this.pageSize
+    });
+    
+    if (trimmedSearchTerm) {
+      console.log('Using search API with query:', trimmedSearchTerm);
       observable = this.adminUserService.searchAdminUsers(
-        this.searchTerm, 
+        trimmedSearchTerm, 
         this.currentPage, 
         this.pageSize, 
         this.sortBy, 
         this.sortDir
       );
     } else if (this.statusFilter) {
+      // Format sort parameter as "field,direction" for the status endpoint
+      const sortParam = `${this.sortBy},${this.sortDir}`;
       observable = this.adminUserService.getAdminUsersByStatus(
-        this.statusFilter as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED',
+        this.statusFilter as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION',
         this.currentPage, 
         this.pageSize, 
-        this.sortBy, 
-        this.sortDir
+        sortParam
       );
     } else {
       observable = this.adminUserService.getAllAdminUsers(
@@ -387,10 +413,13 @@ export class AdminUserListComponent implements OnInit {
       next: (response) => {
         this.isLoading = false;
         console.log('Admin Users API Response:', response);
+        console.log('Response data length:', response.data?.length || 0);
+        console.log('Total elements:', response.totalElements);
         this.adminUsers = response.data || [];
         this.totalElements = response.totalElements || 0;
         this.totalPages = response.totalPages || 0;
         console.log('Loaded admin users:', this.adminUsers.length);
+        console.log('Admin users list:', this.adminUsers.map(u => ({ username: u.username, email: u.email })));
       },
       error: (error) => {
         this.isLoading = false;
@@ -398,7 +427,15 @@ export class AdminUserListComponent implements OnInit {
         console.error('Error status:', error.status);
         console.error('Error details:', error.error);
         
-        if (error.status === 403) {
+        // Get trimmed search term for fallback check
+        const trimmedSearchTerm = this.searchTerm?.trim();
+        
+        // Handle specific error cases
+        if (error.status === 400) {
+          // Bad Request - usually missing or invalid 'q' parameter
+          const errorMessage = error.error?.message || 'Invalid search query. Please enter a search term.';
+          this.toastService.error('Search Error', errorMessage);
+        } else if (error.status === 403) {
           console.error('403 Forbidden - Authentication/Authorization issue');
           this.toastService.error('Access Denied', 'Please log in again.');
           this.authService.logout();
@@ -408,6 +445,11 @@ export class AdminUserListComponent implements OnInit {
           this.toastService.error('Session Expired', 'Please log in again.');
           this.authService.logout();
           this.router.navigate(['/login']);
+        } else if ((error.status === 404 || error.status === 405) && trimmedSearchTerm) {
+          // If search endpoint doesn't exist, fall back to client-side filtering
+          console.warn('Search endpoint not found, falling back to client-side filtering');
+          this.performClientSideSearch(trimmedSearchTerm);
+          return;
         } else {
           this.toastService.error('Error Loading Admin Users', error.error?.message || error.message || 'Unknown error occurred');
         }
@@ -415,9 +457,78 @@ export class AdminUserListComponent implements OnInit {
     });
   }
 
+  onSearchEnter(event: Event) {
+    const keyboardEvent = event as KeyboardEvent;
+    keyboardEvent.preventDefault();
+    keyboardEvent.stopPropagation();
+    console.log('Enter key pressed, current searchTerm:', this.searchTerm);
+    this.onSearch();
+  }
+
   onSearch() {
+    console.log('onSearch called, searchTerm:', this.searchTerm);
+    const trimmed = this.searchTerm?.trim();
+    
+    // If search is empty, clear it and reload all users
+    if (!trimmed) {
+      this.searchTerm = '';
+      this.statusFilter = '';
+      this.currentPage = 0;
+      this.loadAdminUsers();
+      return;
+    }
+    
+    // Perform search
     this.currentPage = 0;
+    this.statusFilter = ''; // Clear status filter when searching
     this.loadAdminUsers();
+  }
+
+  onSearchInput() {
+    // Only trigger search when field is cleared (for immediate feedback)
+    // For actual searching, user should press Enter or click search button
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.currentPage = 0;
+      this.statusFilter = '';
+      this.loadAdminUsers();
+    }
+  }
+
+  /**
+   * Perform client-side search filtering when API endpoint is not available
+   */
+  private performClientSideSearch(searchTerm: string) {
+    this.isLoading = true;
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Load all users (or a large batch) for client-side filtering
+    this.adminUserService.getAllAdminUsers(0, 1000, this.sortBy, this.sortDir).subscribe({
+      next: (response) => {
+        const allUsers = response.data || [];
+        
+        // Filter users by search term (username, email, phone number)
+        const filtered = allUsers.filter(user => 
+          user.username.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower) ||
+          user.phoneNumber?.toLowerCase().includes(searchLower)
+        );
+        
+        // Apply pagination to filtered results
+        const startIndex = this.currentPage * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        this.adminUsers = filtered.slice(startIndex, endIndex);
+        this.totalElements = filtered.length;
+        this.totalPages = Math.ceil(filtered.length / this.pageSize);
+        this.isLoading = false;
+        
+        console.log(`Client-side search: Found ${filtered.length} users matching "${searchTerm}"`);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error loading users for client-side search:', error);
+        this.toastService.error('Error Loading Admin Users', error.error?.message || error.message || 'Unknown error occurred');
+      }
+    });
   }
 
   onStatusFilterChange() {

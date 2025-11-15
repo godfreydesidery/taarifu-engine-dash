@@ -189,9 +189,8 @@ export class LoginComponent {
       email: ['', [Validators.required, Validators.email]]
     });
     
-    // Clear any existing invalid tokens on login page load
-    console.log('Login page loaded - clearing any existing tokens');
-    this.authService.logout();
+    // Don't clear tokens on login page load - let the interceptor handle 401 responses
+    // This prevents clearing valid tokens when redirected here after a reload
   }
 
   onSubmit() {

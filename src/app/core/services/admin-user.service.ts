@@ -20,7 +20,11 @@ import {
   UsernameAvailabilityApiResponse,
   EmailAvailabilityApiResponse,
   ResetAdminUserPasswordResponse,
-  ChangeAdminUserPasswordResponse
+  ChangeAdminUserPasswordResponse,
+  ValidatePasswordRequest,
+  ValidatePasswordResponse,
+  AdminUserSummary,
+  AdminUserSummaryListResponse
 } from '../models/admin-user.model';
 
 @Injectable({
@@ -107,7 +111,8 @@ export class AdminUserService {
     return this.http.get<AdminUserStatsResponse>(`${this.API_URL}/admin/v1/users/admin-users/stats`);
   }
 
-  // Search Admin Users (if available)
+  // Search Admin Users
+  // Searches by username, email, and phone number (case-insensitive, partial matching)
   searchAdminUsers(
     query: string,
     page: number = 0, 
@@ -122,24 +127,56 @@ export class AdminUserService {
       .set('sortBy', sortBy)
       .set('sortDir', sortDir);
     
-    return this.http.get<AdminUserListResponse>(`${this.API_URL}/admin/v1/users/admin-users/search`, { params });
+    const url = `${this.API_URL}/admin/v1/users/admin-users/search`;
+    console.log('Search API call:', {
+      url: url,
+      query: query,
+      params: {
+        q: query,
+        page: page,
+        size: size,
+        sortBy: sortBy,
+        sortDir: sortDir
+      }
+    });
+    
+    return this.http.get<AdminUserListResponse>(url, { params });
   }
 
   // Get Admin Users by Status
   getAdminUsersByStatus(
-    status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED',
+    status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION',
+    page: number = 0, 
+    size: number = 20, 
+    sort?: string
+  ): Observable<AdminUserListResponse> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+    
+    // Add sort parameter if provided (format: "field,direction")
+    if (sort) {
+      params = params.set('sort', sort);
+    }
+    
+    return this.http.get<AdminUserListResponse>(`${this.API_URL}/admin/v1/users/admin-users/status/${status}`, { params });
+  }
+
+  // Get Admin User Summaries by Status
+  getAdminUserSummariesByStatus(
+    status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION',
     page: number = 0, 
     size: number = 10, 
     sortBy: string = 'createdAt', 
     sortDir: string = 'desc'
-  ): Observable<AdminUserListResponse> {
+  ): Observable<AdminUserSummaryListResponse> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString())
       .set('sortBy', sortBy)
       .set('sortDir', sortDir);
     
-    return this.http.get<AdminUserListResponse>(`${this.API_URL}/admin/v1/users/admin-users/status/${status}`, { params });
+    return this.http.get<AdminUserSummaryListResponse>(`${this.API_URL}/admin/v1/users/admin-users/status/${status}/summaries`, { params });
   }
 
   // Reset Admin User Password (generates new password and sends via email)
@@ -175,6 +212,16 @@ export class AdminUserService {
     };
     
     return this.http.put<ResetAdminUserPasswordResponse>(`${this.API_URL}/admin/v1/users/admin-users/uid/${uid}/force-password-reset`, resetRequest);
+  }
+
+  /**
+   * Validate password using API endpoint
+   */
+  validatePassword(request: ValidatePasswordRequest): Observable<ValidatePasswordResponse> {
+    return this.http.post<ValidatePasswordResponse>(
+      `${this.API_URL}/admin/v1/users/admin-users/validate-password`, 
+      request
+    );
   }
 
   /**

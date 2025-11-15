@@ -77,58 +77,57 @@ import { ToastService } from '../../../core/services/toast.service';
                   </div>
                 </div>
 
-                <!-- Password fields only shown in edit mode -->
-                <div class="row" *ngIf="isEditMode">
+                <!-- Phone Number - shown in both create and edit mode -->
+                <div class="row">
                   <div class="col-md-6">
                     <div class="mb-3">
-                      <label for="password" class="form-label">
-                        New Password
-                        <small class="text-muted">(Leave blank to keep current password)</small>
-                      </label>
+                      <label for="phoneNumber" class="form-label">Phone Number</label>
                       <input 
-                        type="password" 
+                        type="tel" 
                         class="form-control" 
-                        id="password"
-                        formControlName="password"
-                        [class.is-invalid]="adminUserForm.get('password')?.invalid && adminUserForm.get('password')?.touched"
-                        placeholder="Enter new password">
-                      <div *ngIf="adminUserForm.get('password')?.invalid && adminUserForm.get('password')?.touched" class="invalid-feedback">
-                        <div *ngIf="adminUserForm.get('password')?.errors?.['minlength']">Password must be at least 12 characters</div>
-                        <div *ngIf="adminUserForm.get('password')?.errors?.['pattern']">Password must contain uppercase, lowercase, numbers, and special characters</div>
-                      </div>
-                      <div class="form-text">
-                        Leave password field empty to keep the current password unchanged.
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                      <input 
-                        type="password" 
-                        class="form-control" 
-                        id="confirmPassword"
-                        formControlName="confirmPassword"
-                        [class.is-invalid]="adminUserForm.get('confirmPassword')?.invalid && adminUserForm.get('confirmPassword')?.touched"
-                        placeholder="Confirm new password">
-                      <div *ngIf="adminUserForm.get('confirmPassword')?.invalid && adminUserForm.get('confirmPassword')?.touched" class="invalid-feedback">
-                        <div *ngIf="adminUserForm.get('confirmPassword')?.errors?.['mismatch']">Passwords do not match</div>
+                        id="phoneNumber"
+                        formControlName="phoneNumber"
+                        [class.is-invalid]="adminUserForm.get('phoneNumber')?.invalid && adminUserForm.get('phoneNumber')?.touched"
+                        placeholder="+255712345678 or 0712345678">
+                      <div *ngIf="adminUserForm.get('phoneNumber')?.invalid && adminUserForm.get('phoneNumber')?.touched" class="invalid-feedback">
+                        <div *ngIf="adminUserForm.get('phoneNumber')?.errors?.['pattern']">Phone number must be a valid Tanzanian phone number (e.g., +255712345678, 0712345678, or 255712345678)</div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                <!-- Require Password Change - only shown in edit mode -->
+                <div class="row" *ngIf="isEditMode">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="requirePasswordChange" class="form-label">Require Password Change</label>
+                      <div class="form-check form-switch">
+                        <input 
+                          class="form-check-input" 
+                          type="checkbox" 
+                          id="requirePasswordChange"
+                          formControlName="requirePasswordChange">
+                        <label class="form-check-label" for="requirePasswordChange">
+                          User must change password on next login
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
 
                 <!-- Info message for create mode -->
                 <div class="row" *ngIf="!isEditMode">
                   <div class="col-12">
                     <div class="alert alert-info">
                       <i class="bi bi-info-circle me-2"></i>
-                      <strong>Password Information:</strong> A secure password will be automatically generated for the new admin user and sent to their email address.
+                      <strong>Password Information:</strong> A secure password will be automatically generated for the new admin user and sent to their email address. The user will be set to Active status and required to change their password on first login.
                     </div>
                   </div>
                 </div>
 
-                <div class="row">
+                <!-- Status field - only shown in edit mode -->
+                <div class="row" *ngIf="isEditMode">
                   <div class="col-md-6">
                     <div class="mb-3">
                       <label for="status" class="form-label">Status</label>
@@ -263,6 +262,10 @@ export class AdminUserFormComponent implements OnInit {
   currentAdminUser: AdminUserResponse | null = null;
   adminUserUid: string | null = null;
 
+  // Tanzanian phone number validation pattern
+  // Accepts: +255712345678, 0712345678, 255712345678
+  private readonly TANZANIAN_PHONE_PATTERN = /^(?:\+255|0|255)?(6[1-24-9]\d{7}|7[1-9]\d{7})$/;
+
   constructor(
     private fb: FormBuilder,
     private adminUserService: AdminUserService,
@@ -282,17 +285,6 @@ export class AdminUserFormComponent implements OnInit {
     this.isEditMode = !!this.adminUserUid;
 
     if (this.isEditMode) {
-      // For edit mode, set up password validation
-      this.adminUserForm.get('password')?.setValidators([
-        Validators.minLength(12),
-        this.strongPasswordValidator
-      ]);
-      this.adminUserForm.get('confirmPassword')?.setValidators([
-        this.passwordMatchValidator
-      ]);
-      this.adminUserForm.get('password')?.updateValueAndValidity();
-      this.adminUserForm.get('confirmPassword')?.updateValueAndValidity();
-      
       this.loadAdminUser();
     } else {
       // For create mode, no password fields are needed - password will be auto-generated
@@ -314,44 +306,14 @@ export class AdminUserFormComponent implements OnInit {
         Validators.required,
         Validators.email
       ]],
-      password: ['', [
-        // Password validators will be set conditionally in ngOnInit
+      phoneNumber: ['', [
+        Validators.pattern(this.TANZANIAN_PHONE_PATTERN)
       ]],
-      confirmPassword: ['', [
-        // Confirm password validators will be set conditionally in ngOnInit
-      ]],
+      requirePasswordChange: [true],
       status: ['ACTIVE']
     });
   }
 
-  private strongPasswordValidator(control: any) {
-    if (!control.value) return null;
-    
-    const password = control.value;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    if (hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar) {
-      return null;
-    } else {
-      return { pattern: true };
-    }
-  }
-
-  private passwordMatchValidator(control: any) {
-    if (!control.value) return null;
-    
-    const password = control.parent?.get('password')?.value;
-    const confirmPassword = control.value;
-    
-    if (password === confirmPassword) {
-      return null;
-    } else {
-      return { mismatch: true };
-    }
-  }
 
   loadAdminUser() {
     if (!this.adminUserUid) return;
@@ -377,6 +339,8 @@ export class AdminUserFormComponent implements OnInit {
     this.adminUserForm.patchValue({
       username: this.currentAdminUser.username,
       email: this.currentAdminUser.email,
+      phoneNumber: this.currentAdminUser.phoneNumber || '',
+      requirePasswordChange: this.currentAdminUser.requirePasswordChange,
       status: this.currentAdminUser.status
       // Password fields are left empty for edit mode
     });
@@ -402,6 +366,8 @@ export class AdminUserFormComponent implements OnInit {
     const createRequest: CreateAdminUserRequest = {
       username: formValue.username,
       email: formValue.email,
+      phoneNumber: formValue.phoneNumber?.trim() || undefined,
+      requirePasswordChange: formValue.requirePasswordChange ?? true,
       status: formValue.status
     };
 
@@ -409,7 +375,10 @@ export class AdminUserFormComponent implements OnInit {
       next: (response) => {
         this.isSubmitting = false;
         if (response.status) {
-          this.toastService.success('Admin User Created', `Admin user ${formValue.username} has been created successfully. A secure password has been generated and sent to their email address.`);
+          const phoneMsg = response.data?.phoneNumber 
+            ? ` A welcome SMS has been sent to ${response.data.phoneNumber}.`
+            : '';
+          this.toastService.success('Admin User Created', `Admin user ${formValue.username} has been created successfully. A secure password has been generated and sent to their email address.${phoneMsg}`);
           this.router.navigate(['/admin-users']);
         }
       },
@@ -431,9 +400,9 @@ export class AdminUserFormComponent implements OnInit {
       status: formValue.status
     };
 
-    // Only include password if it's provided
-    if (formValue.password && formValue.password.trim() !== '') {
-      updateRequest.password = formValue.password;
+    // Handle phone number: if provided, include in updateRequest (empty string clears it, undefined leaves unchanged)
+    if (formValue.phoneNumber !== undefined) {
+      updateRequest.phoneNumber = formValue.phoneNumber?.trim() || '';
     }
 
     this.adminUserService.updateAdminUser(this.adminUserUid, updateRequest).subscribe({
@@ -458,4 +427,5 @@ export class AdminUserFormComponent implements OnInit {
       control?.markAsTouched();
     });
   }
+
 }

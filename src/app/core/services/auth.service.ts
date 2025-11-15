@@ -11,10 +11,10 @@ export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'current_user';
 
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  private readonly currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(private readonly http: HttpClient) {
     this.loadStoredUser();
   }
 
@@ -38,27 +38,19 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     const token = this.getToken();
-    if (!token) {
-      console.log('No token found - user not authenticated');
-      return false;
+    const user = this.getCurrentUser();
+    // Also check localStorage directly as fallback in case BehaviorSubject hasn't loaded yet
+    const storedUser = localStorage.getItem(this.USER_KEY);
+    
+    // If we have both token and user (either from BehaviorSubject or localStorage), consider authenticated
+    // Let the server validate the token - it will return 401 if invalid
+    // This prevents unnecessary redirects during development reloads
+    if (token && (user || storedUser)) {
+      return true;
     }
     
-    // Check if token is expired (basic check)
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      if (payload.exp && payload.exp < currentTime) {
-        console.log('Token expired - user not authenticated');
-        this.logout(); // Clear expired token
-        return false;
-      }
-      console.log('Token valid - user authenticated');
-      return true;
-    } catch (error) {
-      console.log('Invalid token format - user not authenticated');
-      this.logout(); // Clear invalid token
-      return false;
-    }
+    // No token or user means not authenticated
+    return false;
   }
 
   getToken(): string | null {
@@ -80,13 +72,17 @@ export class AuthService {
 
   private loadStoredUser(): void {
     const storedUser = localStorage.getItem(this.USER_KEY);
+    
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
         this.currentUserSubject.next(user);
       } catch (error) {
         console.error('Error parsing stored user:', error);
-        this.logout();
+        // Don't logout on parse error - just clear the invalid user data
+        // Keep the token in case it's still valid
+        localStorage.removeItem(this.USER_KEY);
+        this.currentUserSubject.next(null);
       }
     }
   }
