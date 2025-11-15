@@ -14,10 +14,9 @@ import { RouterModule } from '@angular/router';
       <div class="sidebar-content">
         <div class="sidebar-header">
           <div class="sidebar-brand">
-            <i class="bi bi-geo-alt-fill"></i>
+            <i class="bi bi-pen-fill"></i>
             <span class="brand-text" *ngIf="!isCollapsed || isHovered">Taarifu</span>
           </div>
-          <small class="text-muted" *ngIf="!isCollapsed || isHovered">Administration</small>
         </div>
         
         <div class="sidebar-nav">
